@@ -1,4 +1,4 @@
-FROM nginx:alpine
+FROM nginx:alpine ##apply the nginx version
 
 COPY nginx.conf /etc/nginx/nginx.conf
 
