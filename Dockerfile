@@ -1,7 +1,7 @@
 # Base image with Docker daemon
 FROM docker:24-dind
 
-# Install required packages
+# Install system tools
 RUN apk add --no-cache \
         bash \
         git \
@@ -11,13 +11,9 @@ RUN apk add --no-cache \
         gzip \
         unzip \
         openssh-client \
-        bash-completion \
-        python3 \
-        py3-virtualenv \
-    && python3 -m ensurepip \
-    && python3 -m pip install --upgrade pip
+        bash-completion
 
-# Install AWS CLI v2 (avoids pip issues)
+# Install AWS CLI v2 (static binary, avoids pip issues)
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     && unzip awscliv2.zip \
     && ./aws/install \
