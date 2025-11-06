@@ -1,0 +1,47 @@
+name: build docker and update k8s manifest
+  
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write  # ✅ allow push to the repo
+
+jobs:
+  build_docker:
+    runs-on: ubuntu-latest
+    
+    env:
+      ECR_REPO: 279205476473.dkr.ecr.us-east-1.amazonaws.com/myapp
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: "AKIAUCAPRPB4VDY47MG3"
+          aws-secret-access-key: "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"
+          aws-region: us-east-1
+
+      - name: Docker login
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REPO }}
+
+      - name: Build Docker image
+        run: |
+          IMAGE_TAG=${{ github.sha }}
+          docker build -t ${{ env.ECR_REPO }}:$IMAGE_TAG .
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.ECR_REPO }}:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          format: table # display human reable table
+          ignore-unfixed: true #Ignore vulnerabilities
+          scanners: vuln # this is to skip the secret only scan vulnerabilities
+          exit-code: 1
+
+      - name: Push image to ECR
+        run: docker push ${{ env.ECR_REPO }}:$IMAGE_TAG
